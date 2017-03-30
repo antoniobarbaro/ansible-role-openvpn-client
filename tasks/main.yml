@@ -1,0 +1,29 @@
+---
+# tasks openvpn-client
+- name: Install epel
+  yum: state=latest name=epel-release
+
+- name: Install openvpn
+  yum: state=latest name=openvpn
+
+- name: copy auth password file
+  template:
+    src: templates/auth.txt.j2
+    dest: "/etc/openvpn/{{ openvpn_client_conf_file | basename | splitext | first }}-auth.txt"
+
+- name: copy openvpn conf file
+  copy:
+    src: "{{ openvpn_client_conf_file }}"
+    dest: "/etc/openvpn/{{ openvpn_client_conf_file | basename }}"
+
+- name: change conf file with auth file
+  lineinfile:
+    dest: "/etc/openvpn/{{ openvpn_client_conf_file | basename }}"
+    regexp: '^auth-user-pass'
+    line: 'auth-user-pass {{ openvpn_client_conf_file | basename | splitext | first }}-auth.txt'
+
+- name: enable and start service
+  systemd:
+    name: "openvpn@{{ openvpn_client_conf_file | basename | splitext | first }}"
+    state: started
+    enabled: yes
